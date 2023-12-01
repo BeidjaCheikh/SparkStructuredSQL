@@ -1,0 +1,21 @@
+Id,Title,Description,Service,Date
+1,Machine Malfunction,Machine A is not functioning properly,Production,2022-01-15 08:30:00
+2,Network Outage,Unable to connect to the server,IT,2023-02-05 14:45:00
+3,Quality Issue,Defective product found in inspection,Quality Control,2022-03-12 11:20:00
+4,Power Failure,Power outage in the facility,Facilities,2023-04-02 17:10:00
+5,Equipment Maintenance,Scheduled maintenance for equipment B,Production,2022-05-20 09:00:00
+6,Software Bug,Error in the inventory management software,IT,2023-06-08 13:15:00
+7,Safety Concern,Unsafe working conditions reported,Health and Safety,2023-07-03 10:05:00
+8,Supply Chain Disruption,Delay in raw material delivery,Supply Chain,2023-08-18 16:40:00
+9,Environmental Compliance Issue,Violation of environmental regulations,Environmental Compliance,2023-09-09 12:55:00
+10,Employee Injury,Accident in the production area,Health and Safety,2023-10-25 15:30:00
+11,Machine Malfunction,Machine B is not functioning properly,Production,2023-11-12 08:45:00
+12,Network Outage,Server connection lost,IT,2023-12-03 14:00:00
+13,Quality Issue,Defects found in product batch,Quality Control,2024-01-08 10:30:00
+14,Power Failure,Electrical failure in the warehouse,Facilities,2024-02-22 16:20:00
+15,Equipment Maintenance,Scheduled maintenance for equipment C,Production,2024-03-15 09:45:00
+16,Software Bug,Error in the order processing system,IT,2024-04-05 13:10:00
+17,Safety Concern,Report of a hazardous spill,Health and Safety,2024-05-19 10:50:00
+18,Supply Chain Disruption,Shipping delays affecting production,Supply Chain,2024-06-14 16:15:00
+19,Environmental Compliance Issue,Improper waste disposal observed,Environmental Compliance,2024-07-02 12:40:00
+20,Employee Injury,Fall in the assembly area,Health and Safety,2024-08-28 15:25:00
