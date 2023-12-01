@@ -11,8 +11,10 @@ import org.apache.spark.sql.types.StructType;
 
 import java.util.concurrent.TimeoutException;
 
+import static org.apache.spark.sql.functions.col;
+
 public class SparkStructuredSQL {
-    public static void main(String[] args) throws TimeoutException, StreamingQueryException {
+    public static void main(String[] args) throws Exception {
         SparkSession ss = SparkSession
                 .builder()
                 .appName("Company Incidents")
@@ -36,11 +38,23 @@ public class SparkStructuredSQL {
                 .schema(schema)
                 .csv(csvFolderPath);
 
-        StreamingQuery query = lines.writeStream()
-                .outputMode("append")
+        // Analyse 1: Afficher d'une manière continue le nombre d'incidents par service
+        Dataset<Row> incidentsByService = lines.groupBy("service").count();
+        StreamingQuery queryByService = incidentsByService.writeStream()
+                .outputMode("complete")
                 .format("console")
                 .start();
 
-        query.awaitTermination();
+        // Analyse 2: Afficher d'une manière continue les deux années où il y avait le plus d'incidents
+        Dataset<Row> incidentsWithYear = lines.withColumn("year", col("date").substr(1, 4));
+        Dataset<Row> incidentsByYear = incidentsWithYear.groupBy("year").count();
+        Dataset<Row> topTwoYears = incidentsByYear.orderBy(col("count").desc()).limit(2);
+        StreamingQuery queryByYear = topTwoYears.writeStream()
+                .outputMode("complete")
+                .format("console")
+                .start();
+
+        queryByService.awaitTermination();
+        queryByYear.awaitTermination();
     }
 }
