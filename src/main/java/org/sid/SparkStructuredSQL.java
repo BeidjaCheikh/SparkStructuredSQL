@@ -1,60 +1,67 @@
 package org.sid;
+
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
-import org.apache.spark.sql.types.DataTypes;
-import org.apache.spark.sql.types.Metadata;
-import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
 import java.util.concurrent.TimeoutException;
 
-import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.count;
 
 public class SparkStructuredSQL {
-    public static void main(String[] args) throws Exception {
-        SparkSession ss = SparkSession
-                .builder()
-                .appName("Company Incidents")
+
+    public static void main(String[] args) throws InterruptedException, TimeoutException, StreamingQueryException {
+
+        SparkSession ss = SparkSession.builder()
+                .appName("StreamingIncidents")
                 .master("local[*]")
                 .getOrCreate();
 
-        StructType schema = new StructType(
-                new StructField[]{
-                        new StructField("id", DataTypes.LongType, false, Metadata.empty()),
-                        new StructField("titre", DataTypes.StringType, false, Metadata.empty()),
-                        new StructField("description", DataTypes.StringType, false, Metadata.empty()),
-                        new StructField("service", DataTypes.StringType, false, Metadata.empty()),
-                        new StructField("date", DataTypes.StringType, false, Metadata.empty()),
-                }
-        );
+        // Define the schema for incidents
+        StructType incidentSchema = new StructType()
+                .add("Id", "integer")
+                .add("Titre", "string")
+                .add("Description", "string")
+                .add("Service", "string")
+                .add("Date", "string");
 
-        String csvFolderPath = "src/main/resources";
+        // Read streaming data from CSV files
+        Dataset<Row> stockData = ss.readStream()
+                .option("sep", ",")
+                .schema(incidentSchema)
+                .csv("hdfs://localhost:9000/rep1");
 
-        Dataset<Row> lines = ss.readStream()
-                .option("header", true)
-                .schema(schema)
-                .csv(csvFolderPath);
+        // Task 1: Display the number of incidents per service continuously
+        Dataset<Row> resultDf = stockData.groupBy("Service")
+                .agg(count(stockData.col("Service")))
+                .filter("Service IS NOT NULL AND Service != 'Service'");
 
-        // Analyse 1: Afficher d'une manière continue le nombre d'incidents par service
-        Dataset<Row> incidentsByService = lines.groupBy("service").count();
-        StreamingQuery queryByService = incidentsByService.writeStream()
+        // Task 2: Display the top two years with the most incidents continuously
+        Dataset<Row> resultDf2 = stockData.withColumn("year", stockData.col("Date").substr(0, 4));
+        Dataset<Row> incidentsCountByYear = resultDf2.groupBy("year")
+                .count()
+                .filter("year IS NOT NULL AND year != 'Date'")
+                .sort(org.apache.spark.sql.functions.desc("count"))
+                .limit(2);
+
+        // Start streaming queries
+        StreamingQuery query1 = resultDf.writeStream()
                 .outputMode("complete")
                 .format("console")
+                .trigger(org.apache.spark.sql.streaming.Trigger.ProcessingTime("8000 milliseconds"))
                 .start();
 
-        // Analyse 2: Afficher d'une manière continue les deux années où il y avait le plus d'incidents
-        Dataset<Row> incidentsWithYear = lines.withColumn("year", col("date").substr(1, 4));
-        Dataset<Row> incidentsByYear = incidentsWithYear.groupBy("year").count();
-        Dataset<Row> topTwoYears = incidentsByYear.orderBy(col("count").desc()).limit(2);
-        StreamingQuery queryByYear = topTwoYears.writeStream()
+        StreamingQuery query2 = incidentsCountByYear.writeStream()
                 .outputMode("complete")
                 .format("console")
+                .trigger(org.apache.spark.sql.streaming.Trigger.ProcessingTime("8000 milliseconds"))
                 .start();
 
-        queryByService.awaitTermination();
-        queryByYear.awaitTermination();
+        // Wait for both queries to terminate
+        //query1.awaitTermination();
+        query2.awaitTermination();
     }
 }
